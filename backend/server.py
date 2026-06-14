@@ -65,6 +65,11 @@ projects_lock  = threading.Lock()
 anthropic_usage_cache = {}
 anthropic_usage_lock  = threading.Lock()
 
+# ── SYSTEM HEALTH CACHE ──────────────────────────────────────────────────────
+
+syshealth_cache = {}
+syshealth_lock  = threading.Lock()
+
 # ── AUTH ─────────────────────────────────────────────────────────────────────
 
 def get_service(account):
@@ -119,22 +124,22 @@ def fetch_recent(service, n=8):
 
 def poll_account(account):
     try:
-        service     = get_service(account)
-        unread      = fetch_count(service, 'is:unread in:inbox')
-        today       = fetch_count(service, 'in:inbox newer_than:1d')
-        sent_today  = fetch_count(service, 'in:sent newer_than:1d')
-        attachments = fetch_count(service, 'has:attachment newer_than:7d')
-        recent      = fetch_recent(service)
-        log(f"{account['email']} — ok — {unread} unread")
+        service      = get_service(account)
+        inbox_total  = fetch_count(service, 'in:inbox')
+        today        = fetch_count(service, 'in:inbox newer_than:1d')
+        sent_today   = fetch_count(service, 'in:sent newer_than:1d')
+        attachments  = fetch_count(service, 'has:attachment newer_than:7d')
+        recent       = fetch_recent(service)
+        log(f"{account['email']} — ok — {inbox_total} in inbox")
         return {
-            'email': account['email'], 'unread': unread, 'today': today,
+            'email': account['email'], 'inbox_total': inbox_total, 'today': today,
             'sent_today': sent_today, 'attachments_7d': attachments,
             'recent': recent, 'status': 'ok', 'last_updated': time.strftime('%H:%M:%S'),
         }
     except Exception as e:
         log(f"{account['email']} — error — {e}")
         return {
-            'email': account['email'], 'unread': None, 'today': None,
+            'email': account['email'], 'inbox_total': None, 'today': None,
             'sent_today': None, 'attachments_7d': None, 'recent': [],
             'status': 'error', 'error': str(e), 'last_updated': time.strftime('%H:%M:%S'),
         }
@@ -241,6 +246,45 @@ def usage_loop():
         time.sleep(3600)
 
 
+# ── SYSTEM HEALTH SAMPLER ────────────────────────────────────────────────────
+
+def sample_syshealth():
+    try:
+        import psutil
+        # First call establishes baseline; interval=1 blocks 1 second for accurate CPU
+        cpu  = psutil.cpu_percent(interval=1)
+        ram  = psutil.virtual_memory().percent
+        disk = psutil.disk_usage('/').percent
+
+        # Network delta over 1 second
+        net1 = psutil.net_io_counters()
+        time.sleep(1)
+        net2 = psutil.net_io_counters()
+        net_sent = max(net2.bytes_sent - net1.bytes_sent, 0)
+        net_recv = max(net2.bytes_recv - net1.bytes_recv, 0)
+
+        return {
+            'cpu':      round(cpu, 1),
+            'ram':      round(ram, 1),
+            'disk':     round(disk, 1),
+            'net_sent': net_sent,
+            'net_recv': net_recv,
+            'status':   'ok',
+        }
+    except Exception as e:
+        log(f"syshealth — error — {e}")
+        return {'status': 'error', 'error': str(e)}
+
+
+def syshealth_loop():
+    while True:
+        result = sample_syshealth()
+        with syshealth_lock:
+            syshealth_cache.clear()
+            syshealth_cache.update(result)
+        time.sleep(3)  # sleep 3s; the sample itself takes ~2s (two 1s sleeps)
+
+
 # ── CLAUDE CHAT ──────────────────────────────────────────────────────────────
 
 def build_system_prompt():
@@ -270,8 +314,8 @@ Aim for 1-3 sentences unless more detail is specifically requested.
 
 Current system state:
 - Time: Texas {tx_time} | South Africa {za_time} | Korea {kr_time}
-- Gmail: {gm.get('unread', '?')} unread, {gm.get('today', '?')} today
-- Workspace: {ws.get('unread', '?')} unread, {ws.get('today', '?')} today
+- Gmail: {gm.get('inbox_total', '?')} in inbox, {gm.get('today', '?')} today
+- Workspace: {ws.get('inbox_total', '?')} in inbox, {ws.get('today', '?')} today
 - Projects: {proj_summary}
 - Recent events: {log_summary}"""
 
@@ -309,6 +353,23 @@ class Handler(BaseHTTPRequestHandler):
         self.send_cors()
         self.end_headers()
 
+    def _serve_static(self, rel_path, content_type):
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        full = os.path.abspath(os.path.join(root, rel_path))
+        if not full.startswith(root) or not os.path.isfile(full):
+            self.send_response(404)
+            self.send_cors()
+            self.end_headers()
+            return
+        with open(full, 'rb') as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_cors()
+        self.end_headers()
+        self.wfile.write(data)
+
     def send_json(self, data, status=200):
         payload = json.dumps(data).encode()
         self.send_response(status)
@@ -318,7 +379,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_GET(self):
-        if self.path == '/metrics':
+        # Serve static frontend files
+        if self.path in ('/', '/index.html'):
+            self._serve_static('index.html', 'text/html')
+        elif self.path.startswith('/js/'):
+            self._serve_static(self.path.lstrip('/'), 'application/javascript')
+        elif self.path.startswith('/style'):
+            self._serve_static(self.path.lstrip('/'), 'text/css')
+
+        elif self.path == '/metrics':
             with cache_lock:
                 self.send_json(cache)
 
@@ -343,6 +412,10 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == '/anthropic-usage':
             with anthropic_usage_lock:
                 self.send_json(dict(anthropic_usage_cache))
+
+        elif self.path == '/syshealth':
+            with syshealth_lock:
+                self.send_json(dict(syshealth_cache))
 
         else:
             self.send_response(404)
@@ -442,6 +515,7 @@ if __name__ == '__main__':
         anthropic_usage_cache.update(initial_usage)
 
     threading.Thread(target=usage_loop, daemon=True).start()
+    threading.Thread(target=syshealth_loop, daemon=True).start()
 
     log(f"Serving on http://localhost:{PORT}")
     server = HTTPServer(('localhost', PORT), Handler)
