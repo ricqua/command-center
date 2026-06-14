@@ -138,7 +138,11 @@ header::after {
   50% { opacity: 0.3; }
 }
 
-.status-text { font-size: 10px; color: var(--green); letter-spacing: 2px; }
+.status-text { font-size: 10px; color: var(--green); letter-spacing: 2px; transition: color 0.4s; }
+.status-text.offline { color: var(--red); }
+
+.dot { transition: background 0.4s, box-shadow 0.4s; }
+.dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
 
 /* ── SIDE PANELS ── */
 .panel-left, .panel-right {
@@ -162,6 +166,13 @@ header::after {
   padding-bottom: 6px;
   margin-bottom: 2px;
   flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s;
+  cursor: default;
+}
+
+.panel-label:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-dim);
 }
 
 /* ── PROJECT CARDS ── */
@@ -171,6 +182,14 @@ header::after {
   background: rgba(0,40,60,0.4);
   position: relative;
   flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.session-card:hover {
+  border-color: var(--cyan-dim);
+  background: rgba(0,60,90,0.55);
+  box-shadow: 0 0 12px rgba(0,245,255,0.1), inset 0 0 8px rgba(0,245,255,0.04);
 }
 
 .session-card::before {
@@ -208,6 +227,14 @@ header::after {
   background: rgba(0,60,80,0.35);
   position: relative;
   flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.focus-card:hover {
+  border-color: var(--cyan);
+  background: rgba(0,80,100,0.5);
+  box-shadow: 0 0 16px rgba(0,245,255,0.15);
 }
 
 .focus-label {
@@ -237,7 +264,7 @@ header::after {
 /* ── ACTIVITY LOG ── */
 .log-feed {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -266,6 +293,14 @@ header::after {
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.kpi-card:hover {
+  border-color: var(--cyan-dim);
+  background: rgba(0,45,70,0.65);
+  box-shadow: 0 0 14px rgba(0,245,255,0.1);
 }
 
 .kpi-card::after {
@@ -303,6 +338,15 @@ header::after {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+#nodes-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: all;
+  z-index: 5;
 }
 
 .orbit {
@@ -499,7 +543,7 @@ header::after {
   grid-column: 1 / -1;
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background-color: var(--border);
 }
@@ -537,6 +581,16 @@ header::after {
 
 .bk-trend { font-size: 9px; margin-top: 3px; color: var(--green); }
 .bk-trend.down { color: var(--red); }
+
+.bottom-kpi {
+  transition: background 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+
+.bottom-kpi:hover {
+  background: rgba(0,30,50,0.85);
+  box-shadow: inset 0 0 12px rgba(0,245,255,0.06), 0 0 10px rgba(0,245,255,0.08);
+}
 
 /* ── FILE / EMAIL ENTRIES ── */
 .file-entry {
@@ -826,3 +880,34 @@ header::after {
 .hydration-status.on-track { color: var(--green); }
 .hydration-status.soon     { color: var(--amber); }
 .hydration-status.overdue  { color: var(--red); }
+
+/* ── SYSTEM HEALTH CARD ── */
+.sh-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+  margin-bottom: 2px;
+}
+
+.sh-value {
+  font-size: 16px;
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan);
+  letter-spacing: 1px;
+  line-height: 1.2;
+  transition: color 0.4s, text-shadow 0.4s;
+}
+
+.sh-value.warn  { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+.sh-value.crit  { color: var(--red);   text-shadow: 0 0 10px var(--red);   }
+
+.sh-bar { transition: width 1s ease, background 0.4s; }
+.sh-bar.warn { background: linear-gradient(90deg, #aa6600, var(--amber)); }
+.sh-bar.crit { background: linear-gradient(90deg, #880022, var(--red));   }
+
+.sh-net {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
