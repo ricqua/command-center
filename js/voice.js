@@ -8,6 +8,10 @@
 
   let usingElevenLabs = null;
 
+  // ── Web Audio analyser for amplitude feed ──
+  let audioCtx    = null;
+  let analyserRaf = null;
+
   // ── Waveform ──
   function setWave(active, color) {
     waveformBars.forEach(b => {
@@ -29,10 +33,13 @@
     } else {
       setWave(false);
     }
+    if (window.plasmaSetState) window.plasmaSetState(state);
   }
 
   // ── Browser TTS fallback ──
   let voices = [];
+  let browserTtsFallbackRaf = null;
+
   function loadVoices() { voices = speechSynthesis.getVoices(); }
   loadVoices();
   speechSynthesis.onvoiceschanged = loadVoices;
@@ -46,6 +53,22 @@
     return voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
   }
 
+  function startBrowserTtsFallback() {
+    if (!window.plasmaSetAmplitude) return;
+    let t = 0;
+    function tick() {
+      window.plasmaSetAmplitude(0.3 + Math.sin(t * 0.08) * 0.25);
+      t++;
+      browserTtsFallbackRaf = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function stopBrowserTtsFallback() {
+    if (browserTtsFallbackRaf) { cancelAnimationFrame(browserTtsFallbackRaf); browserTtsFallbackRaf = null; }
+    if (window.plasmaSetAmplitude) window.plasmaSetAmplitude(0);
+  }
+
   function speakBrowser(text, onEnd) {
     speechSynthesis.cancel();
     const utt    = new SpeechSynthesisUtterance(text);
@@ -53,13 +76,40 @@
     utt.pitch    = 0.85;
     utt.rate     = 0.92;
     utt.volume   = 1;
-    utt.onstart  = () => setState('speaking');
-    utt.onend    = () => { setState('idle'); if (onEnd) onEnd(); };
-    utt.onerror  = () => { setState('idle'); if (onEnd) onEnd(); };
+    utt.onstart  = () => { setState('speaking'); startBrowserTtsFallback(); };
+    utt.onend    = () => { stopBrowserTtsFallback(); setState('idle'); if (onEnd) onEnd(); };
+    utt.onerror  = () => { stopBrowserTtsFallback(); setState('idle'); if (onEnd) onEnd(); };
     speechSynthesis.speak(utt);
   }
 
   // ── ElevenLabs TTS via backend proxy ──
+  function startAmplitudeFeed(audioEl) {
+    if (!window.plasmaSetAmplitude) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source   = audioCtx.createMediaElementSource(audioEl);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      function tick() {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += Math.abs(data[i] - 128);
+        const rms = Math.min(sum / data.length / 128, 1);
+        window.plasmaSetAmplitude(rms * 2.5);
+        analyserRaf = requestAnimationFrame(tick);
+      }
+      tick();
+    } catch { /* Web Audio not available — plasma still works without amplitude */ }
+  }
+
+  function stopAmplitudeFeed() {
+    if (analyserRaf) { cancelAnimationFrame(analyserRaf); analyserRaf = null; }
+    if (window.plasmaSetAmplitude) window.plasmaSetAmplitude(0);
+  }
+
   async function speakElevenLabs(text, onEnd) {
     try {
       setState('speaking');
@@ -70,11 +120,12 @@
         signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) throw new Error(`TTS status ${res.status}`);
-      const blob    = await res.blob();
-      const url     = URL.createObjectURL(blob);
-      const audio   = new Audio(url);
-      audio.onended = () => { URL.revokeObjectURL(url); setState('idle'); if (onEnd) onEnd(); };
-      audio.onerror = () => { URL.revokeObjectURL(url); speakBrowser(text, onEnd); };
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onplay   = () => startAmplitudeFeed(audio);
+      audio.onended  = () => { stopAmplitudeFeed(); URL.revokeObjectURL(url); setState('idle'); if (onEnd) onEnd(); };
+      audio.onerror  = () => { stopAmplitudeFeed(); URL.revokeObjectURL(url); speakBrowser(text, onEnd); };
       await audio.play();
     } catch {
       speakBrowser(text, onEnd);
