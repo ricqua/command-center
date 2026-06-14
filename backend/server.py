@@ -60,6 +60,11 @@ cache_lock = threading.Lock()
 projects_cache = []
 projects_lock  = threading.Lock()
 
+# ── ANTHROPIC USAGE CACHE ────────────────────────────────────────────────────
+
+anthropic_usage_cache = {}
+anthropic_usage_lock  = threading.Lock()
+
 # ── AUTH ─────────────────────────────────────────────────────────────────────
 
 def get_service(account):
@@ -177,6 +182,65 @@ def projects_loop():
             projects_cache.extend(result)
         time.sleep(60)
 
+# ── ANTHROPIC USAGE FETCH ────────────────────────────────────────────────────
+
+def fetch_anthropic_usage():
+    if not ANTHROPIC_KEY or ANTHROPIC_KEY.startswith('sk-ant-REPLACE'):
+        log("anthropic usage — no api key")
+        return {}
+    try:
+        import urllib.request
+        end   = datetime.date.today()
+        start = end - datetime.timedelta(days=364)
+        url   = (
+            f"https://api.anthropic.com/v1/usage/tokens"
+            f"?start_time={start.isoformat()}T00:00:00Z"
+            f"&end_time={end.isoformat()}T23:59:59Z"
+            f"&granularity=daily"
+        )
+        req = urllib.request.Request(url, headers={
+            'x-api-key':         ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+
+        # Haiku 4.5 pricing: $0.25/M input, $1.25/M output
+        INPUT_PRICE  = 0.25  / 1_000_000
+        OUTPUT_PRICE = 1.25  / 1_000_000
+
+        dates, input_tokens, output_tokens, cost_usd = [], [], [], []
+        for entry in data.get('data', []):
+            d = entry.get('timestamp', '')[:10]
+            inp  = entry.get('input_tokens', 0)
+            out  = entry.get('output_tokens', 0)
+            cost = inp * INPUT_PRICE + out * OUTPUT_PRICE
+            dates.append(d)
+            input_tokens.append(inp)
+            output_tokens.append(out)
+            cost_usd.append(round(cost, 6))
+
+        log(f"anthropic usage — ok — {len(dates)} days")
+        return {
+            'dates':         dates,
+            'input_tokens':  input_tokens,
+            'output_tokens': output_tokens,
+            'cost_usd':      cost_usd,
+        }
+    except Exception as e:
+        log(f"anthropic usage — error — {e}")
+        return {}
+
+
+def usage_loop():
+    while True:
+        result = fetch_anthropic_usage()
+        with anthropic_usage_lock:
+            anthropic_usage_cache.clear()
+            anthropic_usage_cache.update(result)
+        time.sleep(3600)
+
+
 # ── CLAUDE CHAT ──────────────────────────────────────────────────────────────
 
 def build_system_prompt():
@@ -276,6 +340,10 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == '/health':
             self.send_json({'status': 'ok'})
 
+        elif self.path == '/anthropic-usage':
+            with anthropic_usage_lock:
+                self.send_json(dict(anthropic_usage_cache))
+
         else:
             self.send_response(404)
             self.send_cors()
@@ -368,6 +436,12 @@ if __name__ == '__main__':
 
     threading.Thread(target=poll_loop,     daemon=True).start()
     threading.Thread(target=projects_loop, daemon=True).start()
+
+    initial_usage = fetch_anthropic_usage()
+    with anthropic_usage_lock:
+        anthropic_usage_cache.update(initial_usage)
+
+    threading.Thread(target=usage_loop, daemon=True).start()
 
     log(f"Serving on http://localhost:{PORT}")
     server = HTTPServer(('localhost', PORT), Handler)
