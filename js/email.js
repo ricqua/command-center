@@ -66,9 +66,13 @@
         row.className = 'file-entry';
         row.style.cssText = 'flex-direction:column;align-items:flex-start;gap:1px;padding:3px 0;';
         const senderColor = m.unread ? 'var(--amber)' : 'var(--cyan-dim)';
-        row.innerHTML = `
-          <span style="color:${senderColor};font-size:8px;letter-spacing:1px;">${fmtSender(m.sender)}</span>
-          <span style="font-size:9px;color:var(--text);">${fmtSubject(m.subject)}</span>`;
+        const senderEl = document.createElement('span');
+        senderEl.textContent = fmtSender(m.sender);
+        senderEl.style.cssText = `color:${senderColor};font-size:8px;letter-spacing:1px;`;
+        const subjectEl = document.createElement('span');
+        subjectEl.textContent = fmtSubject(m.subject);
+        subjectEl.style.cssText = 'font-size:9px;color:var(--text);';
+        row.append(senderEl, subjectEl);
         feed.appendChild(row);
       });
     }
@@ -87,6 +91,7 @@
   async function fetchEmailMetrics() {
     try {
       const res  = await fetch(`${BACKEND}/metrics`, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderEmailPanel('gmail',     data.gmail);
       renderEmailPanel('workspace', data.workspace);
