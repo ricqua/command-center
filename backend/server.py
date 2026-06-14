@@ -277,6 +277,7 @@ class Handler(BaseHTTPRequestHandler):
 
         else:
             self.send_response(404)
+            self.send_cors()
             self.end_headers()
 
     def do_POST(self):
@@ -308,6 +309,7 @@ class Handler(BaseHTTPRequestHandler):
                 voice_id = CONFIG.get('elevenlabs_voice_id', '21m00Tcm4TlvDq8ikWAM')
                 if not text or not el_key or el_key == 'REPLACE_ME':
                     self.send_response(503)
+                    self.send_cors()
                     self.end_headers()
                     return
                 import requests as req_lib
@@ -324,6 +326,7 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 if resp.status_code != 200:
                     self.send_response(502)
+                    self.send_cors()
                     self.end_headers()
                     return
                 audio = resp.content
@@ -337,10 +340,12 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 log(f"elevenlabs tts — error — {e}")
                 self.send_response(500)
+                self.send_cors()
                 self.end_headers()
 
         else:
             self.send_response(404)
+            self.send_cors()
             self.end_headers()
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
