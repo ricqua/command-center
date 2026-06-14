@@ -9,13 +9,13 @@
     return (s || '(no subject)').slice(0, 34);
   }
 
-  function pressureWidth(unread) {
-    return Math.min(Math.round((unread / 30) * 100), 100);
+  function pressureWidth(total) {
+    return Math.min(Math.round((total / 200) * 100), 100);
   }
 
-  function pressureColor(unread) {
-    if (unread >= 20) return 'linear-gradient(90deg,#880022,var(--red))';
-    if (unread >= 8)  return 'linear-gradient(90deg,#aa6600,var(--amber))';
+  function pressureColor(total) {
+    if (total >= 100) return 'linear-gradient(90deg,#880022,var(--red))';
+    if (total >= 50)  return 'linear-gradient(90deg,#aa6600,var(--amber))';
     return 'linear-gradient(90deg,var(--blue),var(--cyan))';
   }
 
@@ -33,7 +33,7 @@
     const prefix = key === 'gmail' ? 'gm' : 'ws';
 
     if (!data || data.status === 'error') {
-      setEl(`${prefix}-unread`, '—');
+      setEl(`${prefix}-inbox`, '—');
       setEl(`${prefix}-today`, '—');
       setEl(`${prefix}-sent`, '—');
       setEl(`${prefix}-attach`, '—');
@@ -41,22 +41,16 @@
       return;
     }
 
-    setEl(`${prefix}-unread`, data.unread ?? '—');
+    setEl(`${prefix}-inbox`,  data.inbox_total ?? '—');
     setEl(`${prefix}-today`,  data.today ?? '—');
     setEl(`${prefix}-sent`,   data.sent_today ?? '—');
     setEl(`${prefix}-attach`, data.attachments_7d ?? '—');
     setEl(`${prefix}-updated`, `UPDATED ${data.last_updated}`);
 
-    const w = pressureWidth(data.unread || 0);
-    const c = pressureColor(data.unread || 0);
+    const w = pressureWidth(data.inbox_total || 0);
+    const c = pressureColor(data.inbox_total || 0);
     setStyle(`${prefix}-pressure`, 'width', w + '%');
     setStyle(`${prefix}-pressure`, 'background', c);
-
-    const unreadEl = document.getElementById(`${prefix}-unread`);
-    if (unreadEl) {
-      unreadEl.style.color = (data.unread >= 8) ? 'var(--amber)' : 'var(--cyan)';
-      unreadEl.style.textShadow = (data.unread >= 8) ? '0 0 12px var(--amber)' : '0 0 12px var(--cyan)';
-    }
 
     const feed = document.getElementById(`${prefix}-recent`);
     if (feed && data.recent) {
@@ -79,15 +73,32 @@
 
   }
 
+  function setStatus(online) {
+    const dot  = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    if (!dot || !text) return;
+    if (online) {
+      dot.classList.remove('offline');
+      text.classList.remove('offline');
+      text.textContent = 'ALL SYSTEMS NOMINAL';
+    } else {
+      dot.classList.add('offline');
+      text.classList.add('offline');
+      text.textContent = 'BACKEND OFFLINE';
+    }
+  }
+
   async function fetchEmailMetrics() {
     try {
       const res  = await fetch(`${BACKEND}/metrics`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       renderEmailPanel('workspace', data.workspace);
-      if (window.logEvent) window.logEvent(`email poll — workspace ${data.workspace?.unread ?? '?'} unread`);
+      setStatus(true);
+      if (window.logEvent) window.logEvent(`email poll — workspace ${data.workspace?.inbox_total ?? '?'} in inbox`);
     } catch {
       renderEmailPanel('workspace', null);
+      setStatus(false);
     }
   }
 

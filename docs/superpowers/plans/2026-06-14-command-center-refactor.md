@@ -2153,7 +2153,7 @@ Create `/mnt/c/Users/ricqua/Desktop/Projects/command-center/js/voice.js`:
     // Greet on load
     setTimeout(async () => {
       await checkElevenLabs();
-      speak('Nightfall online. Voice interface ready. Click the microphone to speak.');
+      speak('Nightfall online. Voice interface ready.');
     }, 1500);
   }
 })();

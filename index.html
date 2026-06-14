@@ -73,13 +73,6 @@
     <div class="panel-label">// PROJECTS</div>
     <div id="project-list"></div>
 
-    <div class="panel-label">// FOCUS</div>
-    <div id="focus-card" class="focus-card">
-      <div class="focus-label">CURRENT FOCUS</div>
-      <div class="focus-project" id="focus-project">—</div>
-      <div class="focus-meta" id="focus-meta">Loading...</div>
-    </div>
-
     <div class="panel-label">// ACTIVITY LOG</div>
     <div class="log-feed" id="log-feed"></div>
   </div>
@@ -88,7 +81,9 @@
   <div class="center-panel">
     <canvas id="plasma-canvas"></canvas>
     <canvas id="nodes-canvas"></canvas>
-    <div class="center-overlay">
+
+    <!-- Top half: mic ring -->
+    <div class="center-top">
       <div class="ai-ring">
         <div class="orbit orbit-3"></div>
         <div class="orbit orbit-4"></div>
@@ -100,18 +95,27 @@
           </svg>
         </button>
       </div>
-      <div class="voice-bar">
-        <div class="voice-waveform" id="waveform">
-          <div class="wave-bar" style="--d:0s;--h:8px"></div>
-          <div class="wave-bar" style="--d:0.07s;--h:14px"></div>
-          <div class="wave-bar" style="--d:0.14s;--h:18px"></div>
-          <div class="wave-bar" style="--d:0.21s;--h:12px"></div>
-          <div class="wave-bar" style="--d:0.28s;--h:16px"></div>
-          <div class="wave-bar" style="--d:0.35s;--h:10px"></div>
-          <div class="wave-bar" style="--d:0.42s;--h:14px"></div>
-        </div>
-        <div class="voice-transcript" id="voice-transcript">AWAITING VOICE INPUT</div>
-        <div class="voice-response" id="voice-response"></div>
+      <div class="voice-waveform" id="waveform">
+        <div class="wave-bar" style="--d:0s;--h:8px"></div>
+        <div class="wave-bar" style="--d:0.07s;--h:14px"></div>
+        <div class="wave-bar" style="--d:0.14s;--h:18px"></div>
+        <div class="wave-bar" style="--d:0.21s;--h:12px"></div>
+        <div class="wave-bar" style="--d:0.28s;--h:16px"></div>
+        <div class="wave-bar" style="--d:0.35s;--h:10px"></div>
+        <div class="wave-bar" style="--d:0.42s;--h:14px"></div>
+      </div>
+    </div>
+
+    <!-- Bottom half: floating chat -->
+    <div class="chat-area">
+      <div class="chat-history" id="chat-history"></div>
+      <div class="chat-input-bar">
+        <input class="chat-input" id="chat-input" type="text" placeholder="SEND A MESSAGE..." autocomplete="off" spellcheck="false">
+        <button class="chat-send-btn" id="chat-send-btn" title="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -119,7 +123,7 @@
   <!-- ══ RIGHT PANEL ══ -->
   <div class="panel-right">
     <!-- Workspace -->
-    <div class="panel-label">// WORKSPACE · richard.quantrill@royalbramble.com</div>
+    <div class="panel-label">// EMAILS</div>
     <div class="email-section kpi-card" style="--delay:0s; padding:8px 11px;">
       <div class="corner corner-tl"></div><div class="corner corner-br"></div>
       <div class="email-grid">

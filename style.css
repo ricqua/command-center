@@ -204,6 +204,20 @@ header::after {
 .session-card.age-recent::before { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 .session-card.age-idle::before { background: var(--text-muted); box-shadow: none; }
 
+.session-card.focused {
+  border-color: var(--cyan-dim);
+  background: rgba(0,50,80,0.55);
+  box-shadow: 0 0 16px rgba(0,245,255,0.12), inset 0 0 10px rgba(0,245,255,0.04);
+}
+
+.focus-pip {
+  font-size: 8px;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
 .session-title {
   font-size: 11px;
   color: var(--cyan);
@@ -328,8 +342,7 @@ header::after {
   background: var(--bg2);
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -369,11 +382,17 @@ header::after {
   border-right-color: rgba(80, 120, 255, 0.25);
 }
 
-.center-overlay {
+/* ── CENTER TOP (mic ring area) ── */
+.center-top {
   position: relative;
   z-index: 10;
-  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
+  gap: 14px;
 }
 
 .ai-ring {
@@ -382,7 +401,6 @@ header::after {
   border: 1px solid var(--cyan-dim);
   border-radius: 50%;
   position: relative;
-  margin: 0 auto 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -444,15 +462,130 @@ header::after {
   50% { box-shadow: 0 0 70px rgba(0,255,136,0.6), inset 0 0 40px rgba(0,255,136,0.2); }
 }
 
-/* ── VOICE UI ── */
-.voice-bar {
-  margin-top: 14px;
+/* ── CHAT AREA (bottom half of center) ── */
+.chat-area {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  padding: 0 24px 16px;
   gap: 8px;
+  height: 48%;
   pointer-events: all;
 }
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,245,255,0.15) transparent;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: msg-fade-in 0.3s ease;
+}
+
+@keyframes msg-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.chat-msg-user .chat-bubble {
+  align-self: flex-end;
+  text-align: right;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0,245,255,0.4);
+  font-size: 11px;
+  letter-spacing: 1px;
+  max-width: 75%;
+}
+
+.chat-msg-ai .chat-bubble {
+  align-self: flex-start;
+  text-align: left;
+  color: var(--text);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  line-height: 1.55;
+  max-width: 85%;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.chat-msg-ai .chat-bubble.thinking {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.chat-msg-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.chat-msg-user .chat-msg-label { text-align: right; color: var(--cyan-dim); }
+.chat-msg-ai   .chat-msg-label { color: var(--text-muted); }
+
+/* Frosted glass input bar */
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(2, 12, 22, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,245,255,0.22);
+  border-radius: 4px;
+  padding: 6px 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(0,245,255,0.06);
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 2px;
+  caret-color: var(--cyan);
+}
+
+.chat-input::placeholder {
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+.chat-send-btn {
+  background: transparent;
+  border: 1px solid rgba(0,245,255,0.25);
+  border-radius: 3px;
+  color: var(--cyan-dim);
+  cursor: pointer;
+  padding: 4px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(0,245,255,0.06);
+}
+
+/* ── VOICE UI ── */
 
 .mic-btn {
   width: 88px; height: 88px;

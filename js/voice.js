@@ -2,14 +2,34 @@
   const BACKEND = 'http://localhost:5050';
 
   const micBtn       = document.getElementById('mic-btn');
-  const transcriptEl = document.getElementById('voice-transcript');
-  const responseEl   = document.getElementById('voice-response');
   const waveformBars = document.querySelectorAll('.wave-bar');
+  const chatHistory  = document.getElementById('chat-history');
+  const chatInput    = document.getElementById('chat-input');
+  const chatSendBtn  = document.getElementById('chat-send-btn');
 
-  let usingElevenLabs = null;
+  let usingElevenLabs  = null;
+  let analyserRaf      = null;
+  const conversationHistory = [];
 
-  // ── Web Audio analyser for amplitude feed ──
-  let analyserRaf = null;
+  // ── Chat history ──
+  function addMessage(role, text) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `chat-msg chat-msg-${role}`;
+
+    const label = document.createElement('div');
+    label.className = 'chat-msg-label';
+    label.textContent = role === 'user' ? 'YOU' : 'NIGHTFALL';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.textContent = text;
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(bubble);
+    chatHistory.appendChild(wrapper);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    return bubble;
+  }
 
   // ── Waveform ──
   function setWave(active, color) {
@@ -81,7 +101,7 @@
     speechSynthesis.speak(utt);
   }
 
-  // ── ElevenLabs TTS via backend proxy ──
+  // ── ElevenLabs TTS ──
   let amplitudeCtx = null;
 
   function startAmplitudeFeed(audioEl) {
@@ -97,12 +117,8 @@
       function tick() {
         analyser.getByteTimeDomainData(data);
         let sum = 0;
-        for (let i = 0; i < data.length; i++) {
-          const v = data[i] - 128;
-          sum += v * v;
-        }
-        const rms = Math.sqrt(sum / data.length) / 128;
-        window.plasmaSetAmplitude(Math.min(rms * 4, 1));
+        for (let i = 0; i < data.length; i++) { const v = data[i] - 128; sum += v * v; }
+        window.plasmaSetAmplitude(Math.min(Math.sqrt(sum / data.length) / 128 * 4, 1));
         analyserRaf = requestAnimationFrame(tick);
       }
       tick();
@@ -150,39 +166,71 @@
   }
 
   async function speak(text) {
-    responseEl.textContent = text;
     const usable = await checkElevenLabs();
     if (usable) {
-      await speakElevenLabs(text, () => setTimeout(() => { responseEl.textContent = ''; }, 3000));
+      await speakElevenLabs(text, () => {});
     } else {
-      speakBrowser(text, () => setTimeout(() => { responseEl.textContent = ''; }, 3000));
+      speakBrowser(text, () => {});
     }
-    if (window.logEvent) window.logEvent(`voice response — ${text.slice(0, 40)}...`);
+    if (window.logEvent) window.logEvent(`nightfall — ${text.slice(0, 40)}...`);
   }
 
-  // ── Call Claude via backend ──
+  // ── Shared: send message to Claude and render response ──
   async function askClaude(message) {
+    addMessage('user', message.toUpperCase());
+
+    const aiBubble = addMessage('ai', '...');
+    aiBubble.classList.add('thinking');
+
+    // Snapshot history before this turn (exclude the greeting to keep context tight)
+    const historySnapshot = conversationHistory.slice(-20);
+
     try {
-      transcriptEl.textContent = message.toUpperCase();
       const res = await fetch(`${BACKEND}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, history: historySnapshot }),
         signal: AbortSignal.timeout(15000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+
       if (data.error) {
-        await speak('I encountered an error. ' + data.error);
+        aiBubble.classList.remove('thinking');
+        aiBubble.textContent = '⚠ ' + data.error;
         return;
       }
+
+      aiBubble.classList.remove('thinking');
+      aiBubble.textContent = data.response;
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      // Record both turns in history for next request
+      conversationHistory.push({ role: 'user', content: message });
+      conversationHistory.push({ role: 'assistant', content: data.response });
+
+      if (window.logEvent) window.logEvent(`chat — ${message.trim().slice(0, 35)}`);
       await speak(data.response);
+
     } catch {
-      transcriptEl.classList.add('error');
-      transcriptEl.textContent = 'BACKEND OFFLINE';
-      await speak('Backend is offline. Please start the Nightfall server.');
+      aiBubble.classList.remove('thinking');
+      aiBubble.textContent = '⚠ BACKEND OFFLINE';
+      setState('idle');
     }
   }
+
+  // ── Text input handler ──
+  function submitText() {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    chatInput.value = '';
+    askClaude(msg);
+  }
+
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitText();
+  });
+  chatSendBtn.addEventListener('click', submitText);
 
   // ── STT ──
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -190,7 +238,7 @@
   if (!SR) {
     micBtn.disabled = true;
     micBtn.title    = 'Speech recognition not supported. Use Chrome or Edge.';
-    transcriptEl.textContent = 'STT UNAVAILABLE — USE CHROME';
+    addMessage('ai', 'STT UNAVAILABLE — USE CHROME OR EDGE');
   } else {
     const recognition          = new SR();
     recognition.continuous     = false;
@@ -204,8 +252,6 @@
       isListening = true;
       speechSynthesis.cancel();
       setState('listening');
-      transcriptEl.textContent = 'LISTENING...';
-      transcriptEl.className   = 'voice-transcript heard';
       if (window.logEvent) window.logEvent('voice — listening started');
       recognition.start();
     }
@@ -228,8 +274,9 @@
         if (r.isFinal) final += r[0].transcript;
         else interim += r[0].transcript;
       }
-      transcriptEl.textContent = (final || interim).toUpperCase();
+      if (chatInput) chatInput.placeholder = (final || interim).toUpperCase() || 'SEND A MESSAGE...';
       if (final) {
+        chatInput.placeholder = 'SEND A MESSAGE...';
         stopListening();
         if (window.logEvent) window.logEvent(`voice command: ${final.trim().slice(0, 40)}`);
         askClaude(final.trim());
@@ -237,20 +284,20 @@
     };
 
     recognition.onerror = e => {
-      transcriptEl.textContent = 'ERROR: ' + e.error.toUpperCase();
-      transcriptEl.className   = 'voice-transcript error';
+      setState('idle');
       stopListening();
     };
 
     recognition.onend = () => {
       if (isListening) stopListening();
-      transcriptEl.classList.remove('heard');
     };
 
     // Greet on load
     setTimeout(async () => {
       await checkElevenLabs();
-      speak('Nightfall online. Voice interface ready. Click the microphone to speak.');
+      const greeting = 'Nightfall online. Voice interface ready.';
+      addMessage('ai', greeting);
+      speak(greeting);
     }, 1500);
   }
 })();

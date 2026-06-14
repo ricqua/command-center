@@ -319,17 +319,25 @@ Current system state:
 - Projects: {proj_summary}
 - Recent events: {log_summary}"""
 
-def call_claude(message):
+def call_claude(message, history=None):
     if not ANTHROPIC_KEY or ANTHROPIC_KEY == 'sk-ant-REPLACE_ME':
         return None, 'No Anthropic API key configured'
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+        messages = []
+        if history:
+            for turn in history:
+                role = turn.get('role')
+                content = turn.get('content', '').strip()
+                if role in ('user', 'assistant') and content:
+                    messages.append({'role': role, 'content': content})
+        messages.append({'role': 'user', 'content': message})
         response = client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=300,
             system=build_system_prompt(),
-            messages=[{'role': 'user', 'content': message}]
+            messages=messages,
         )
         text = response.content[0].text
         log(f"claude chat — ok — {len(text)} chars")
@@ -429,11 +437,12 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 data    = json.loads(body)
                 message = data.get('message', '').strip()
+                history = data.get('history', [])
                 if not message:
                     self.send_json({'error': 'empty message'}, 400)
                     return
                 log(f"voice command: {message[:60]}")
-                text, err = call_claude(message)
+                text, err = call_claude(message, history)
                 if err:
                     self.send_json({'error': err}, 500)
                 else:

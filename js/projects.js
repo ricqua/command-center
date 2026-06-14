@@ -1,7 +1,6 @@
 (function() {
   const BACKEND = 'http://localhost:5050';
   let projectsData = [];
-  let focusIndex   = 0;
 
   // ── HTML escape helper (XSS prevention) ──
   function esc(s) {
@@ -37,15 +36,20 @@
       list.innerHTML = '<div style="font-size:9px;color:var(--text-muted);letter-spacing:2px;">NO PROJECTS FOUND</div>';
       return;
     }
-    list.innerHTML = projects.map(p => `
-      <div class="session-card ${ageClass(p.age)}" style="margin-bottom:6px;">
+    const sorted = [...projects].sort((a, b) => b.last_modified.localeCompare(a.last_modified));
+    const focusName = sorted[0]?.name;
+    list.innerHTML = projects.map(p => {
+      const isFocused = p.name === focusName;
+      return `
+      <div class="session-card ${ageClass(p.age)}${isFocused ? ' focused' : ''}" style="margin-bottom:6px;">
         <div class="corner corner-tl"></div><div class="corner corner-br"></div>
-        <div class="session-title">${esc(p.name.toUpperCase())}</div>
+        <div class="session-title">${esc(p.name.toUpperCase())}${isFocused ? ' <span class="focus-pip">◆ FOCUS</span>' : ''}</div>
         <div class="session-meta">${esc(fmtDate(p.last_modified))}</div>
         <span class="session-status ${p.age === 'active' ? 'live' : 'idle'}" style="display:inline-block;font-size:8px;padding:1px 6px;margin-top:3px;letter-spacing:2px;${p.age === 'active' ? 'background:rgba(0,255,136,0.1);color:var(--green);border:1px solid var(--green-dim);' : 'background:rgba(0,80,100,0.2);color:var(--text-dim);border:1px solid var(--text-muted);'}">
           ${p.age === 'active' ? '● ACTIVE' : p.age === 'recent' ? '◎ RECENT' : '○ IDLE'}
         </span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     // Update KPI + bottom bar
     const count = projects.length;
@@ -60,22 +64,6 @@
     if (bbEl) bbEl.textContent = count;
     if (bbBarEl) bbBarEl.style.width = Math.min(count * 10, 100) + '%';
     if (bbTrendEl) bbTrendEl.textContent = `${activeCount} ACTIVE`;
-  }
-
-  // ── Focus reminder ──
-  function renderFocus(projects) {
-    if (!projects.length) return;
-    const sorted = [...projects].sort((a, b) => b.last_modified.localeCompare(a.last_modified));
-    const p = sorted[focusIndex % sorted.length];
-    const el = document.getElementById('focus-project');
-    const meta = document.getElementById('focus-meta');
-    if (el) el.textContent = p.name.toUpperCase();
-    if (meta) meta.textContent = `LAST ACTIVE: ${fmtDate(p.last_modified)}`;
-  }
-
-  function rotateFocus() {
-    focusIndex++;
-    renderFocus(projectsData);
   }
 
   // ── Activity log ──
@@ -109,7 +97,6 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       projectsData = await res.json();
       renderProjects(projectsData);
-      renderFocus(projectsData);
       window.logEvent(`projects scan — ${projectsData.length} found`);
     } catch {
       renderProjects([]);
@@ -135,5 +122,4 @@
   fetchBackendLog();
   setInterval(fetchProjects,   60000);
   setInterval(fetchBackendLog, 15000);
-  setInterval(rotateFocus,     300000); // rotate focus every 5 min
 })();
