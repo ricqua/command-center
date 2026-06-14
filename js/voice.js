@@ -9,7 +9,6 @@
   let usingElevenLabs = null;
 
   // ── Web Audio analyser for amplitude feed ──
-  let audioCtx    = null;
   let analyserRaf = null;
 
   // ── Waveform ──
@@ -86,23 +85,26 @@
   function startAmplitudeFeed(audioEl) {
     if (!window.plasmaSetAmplitude) return;
     try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source   = audioCtx.createMediaElementSource(audioEl);
-      const analyser = audioCtx.createAnalyser();
+      const ctx      = new (window.AudioContext || window.webkitAudioContext)();
+      const source   = ctx.createMediaElementSource(audioEl);
+      const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
-      analyser.connect(audioCtx.destination);
+      analyser.connect(ctx.destination);
       const data = new Uint8Array(analyser.frequencyBinCount);
       function tick() {
         analyser.getByteTimeDomainData(data);
         let sum = 0;
-        for (let i = 0; i < data.length; i++) sum += Math.abs(data[i] - 128);
-        const rms = Math.min(sum / data.length / 128, 1);
-        window.plasmaSetAmplitude(rms * 2.5);
+        for (let i = 0; i < data.length; i++) {
+          const v = data[i] - 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length) / 128;
+        window.plasmaSetAmplitude(Math.min(rms * 4, 1));
         analyserRaf = requestAnimationFrame(tick);
       }
       tick();
-    } catch { /* Web Audio not available — plasma still works without amplitude */ }
+    } catch { /* Web Audio not available */ }
   }
 
   function stopAmplitudeFeed() {
