@@ -1,0 +1,7 @@
+config.json
+backend/credentials.json
+backend/token_gmail.json
+backend/token_workspace.json
+.superpowers/
+__pycache__/
+*.pyc
