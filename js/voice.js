@@ -82,15 +82,17 @@
   }
 
   // ── ElevenLabs TTS via backend proxy ──
+  let amplitudeCtx = null;
+
   function startAmplitudeFeed(audioEl) {
     if (!window.plasmaSetAmplitude) return;
     try {
-      const ctx      = new (window.AudioContext || window.webkitAudioContext)();
-      const source   = ctx.createMediaElementSource(audioEl);
-      const analyser = ctx.createAnalyser();
+      amplitudeCtx   = new (window.AudioContext || window.webkitAudioContext)();
+      const source   = amplitudeCtx.createMediaElementSource(audioEl);
+      const analyser = amplitudeCtx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
-      analyser.connect(ctx.destination);
+      analyser.connect(amplitudeCtx.destination);
       const data = new Uint8Array(analyser.frequencyBinCount);
       function tick() {
         analyser.getByteTimeDomainData(data);
@@ -109,6 +111,7 @@
 
   function stopAmplitudeFeed() {
     if (analyserRaf) { cancelAnimationFrame(analyserRaf); analyserRaf = null; }
+    if (amplitudeCtx) { amplitudeCtx.close(); amplitudeCtx = null; }
     if (window.plasmaSetAmplitude) window.plasmaSetAmplitude(0);
   }
 
