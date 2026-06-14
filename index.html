@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMMAND CENTER — R.A.</title>
+<title>NIGHTFALL COMMAND CENTER</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,8 +16,8 @@
   <!-- ══ HEADER ══ -->
   <header>
     <div class="logo">
-      R . A &nbsp; COMMAND CENTER
-      <br><span>SYSTEM STATUS: ONLINE</span>
+      NIGHTFALL
+      <br><span>SYSTEM STATUS: ALL SYSTEMS NOMINAL</span>
     </div>
     <div class="clocks">
       <div class="clock-zone">
@@ -37,8 +37,7 @@
     </div>
     <div class="status-bar">
       <div class="dot"></div>
-      <div class="status-text">ALL SYSTEMS NOMINAL</div>
-      <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;" id="date-display">—</div>
+      <div class="status-text">NIGHTFALL ONLINE</div>
     </div>
   </header>
 
@@ -90,10 +89,14 @@
     <canvas id="neural-canvas"></canvas>
     <div class="center-overlay">
       <div class="ai-ring">
-        <div class="ai-core" id="ai-core">NF</div>
+        <button class="mic-btn" id="mic-btn" title="Click to speak to Nightfall">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
       </div>
-      <div class="center-title">NIGHTFALL</div>
-      <div class="center-sub">SUPERINTELLIGENCE INTERFACE v3.0</div>
       <div class="voice-bar">
         <div class="voice-waveform" id="waveform">
           <div class="wave-bar" style="--d:0s;--h:8px"></div>
@@ -104,13 +107,6 @@
           <div class="wave-bar" style="--d:0.35s;--h:10px"></div>
           <div class="wave-bar" style="--d:0.42s;--h:14px"></div>
         </div>
-        <button class="mic-btn" id="mic-btn" title="Click to speak to Nightfall">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-            <rect x="9" y="2" width="6" height="12" rx="3"/>
-            <path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/>
-            <line x1="8" y1="22" x2="16" y2="22"/>
-          </svg>
-        </button>
         <div class="voice-transcript" id="voice-transcript">AWAITING VOICE INPUT</div>
         <div class="voice-response" id="voice-response"></div>
       </div>
@@ -119,32 +115,15 @@
 
   <!-- ══ RIGHT PANEL ══ -->
   <div class="panel-right">
-    <!-- Gmail -->
-    <div class="panel-label">// GMAIL · royalbramble@gmail.com</div>
+    <!-- Workspace -->
+    <div class="panel-label">// WORKSPACE · richard.quantrill@royalbramble.com</div>
     <div class="email-section kpi-card" style="--delay:0s; padding:8px 11px;">
       <div class="corner corner-tl"></div><div class="corner corner-br"></div>
       <div class="email-grid">
-        <div><div class="kpi-label">UNREAD</div><div id="gm-unread" class="kpi-value" style="font-size:22px;">—</div></div>
-        <div><div class="kpi-label">TODAY</div><div id="gm-today" class="kpi-value" style="font-size:22px;">—</div></div>
-        <div><div class="kpi-label">SENT TODAY</div><div id="gm-sent" class="kpi-value" style="font-size:14px;">—</div></div>
-        <div><div class="kpi-label">ATTACH 7D</div><div id="gm-attach" class="kpi-value" style="font-size:14px;">—</div></div>
-      </div>
-      <div class="kpi-label" style="margin-bottom:3px;">INBOX PRESSURE</div>
-      <div class="bk-bar"><div id="gm-pressure" class="bk-bar-fill" style="width:0%"></div></div>
-      <div id="gm-updated" style="font-size:7px;color:var(--text-muted);letter-spacing:2px;margin-top:4px;">⚠ START BACKEND</div>
-    </div>
-    <div class="panel-label">// RECENT · GMAIL</div>
-    <div id="gm-recent" class="email-recent"></div>
-
-    <!-- Workspace -->
-    <div class="panel-label">// WORKSPACE · richard.quantrill@royalbramble.com</div>
-    <div class="email-section kpi-card" style="--delay:0.5s; padding:8px 11px;">
-      <div class="corner corner-tl"></div><div class="corner corner-br"></div>
-      <div class="email-grid">
-        <div><div class="kpi-label">UNREAD</div><div id="ws-unread" class="kpi-value" style="font-size:22px;color:var(--text-muted);">—</div></div>
-        <div><div class="kpi-label">TODAY</div><div id="ws-today" class="kpi-value" style="font-size:22px;color:var(--text-muted);">—</div></div>
-        <div><div class="kpi-label">SENT TODAY</div><div id="ws-sent" class="kpi-value" style="font-size:14px;color:var(--text-muted);">—</div></div>
-        <div><div class="kpi-label">ATTACH 7D</div><div id="ws-attach" class="kpi-value" style="font-size:14px;color:var(--text-muted);">—</div></div>
+        <div><div class="kpi-label">UNREAD</div><div id="ws-unread" class="kpi-value" style="font-size:22px;">—</div></div>
+        <div><div class="kpi-label">TODAY</div><div id="ws-today" class="kpi-value" style="font-size:22px;">—</div></div>
+        <div><div class="kpi-label">SENT TODAY</div><div id="ws-sent" class="kpi-value" style="font-size:14px;">—</div></div>
+        <div><div class="kpi-label">ATTACH 7D</div><div id="ws-attach" class="kpi-value" style="font-size:14px;">—</div></div>
       </div>
       <div class="kpi-label" style="margin-bottom:3px;">INBOX PRESSURE</div>
       <div class="bk-bar"><div id="ws-pressure" class="bk-bar-fill" style="width:0%"></div></div>
@@ -152,42 +131,6 @@
     </div>
     <div class="panel-label">// RECENT · WORKSPACE</div>
     <div id="ws-recent" class="email-recent"></div>
-
-    <!-- System Health -->
-    <div class="panel-label">// SYSTEM HEALTH</div>
-    <div class="kpi-card" style="--delay:1s; padding:8px 11px;">
-      <div class="corner corner-tl"></div><div class="corner corner-br"></div>
-      <div class="health-grid">
-        <div><div class="kpi-label">CPU CORES</div><div id="sh-cores" class="kpi-value" style="font-size:14px;">—</div></div>
-        <div><div class="kpi-label">DEVICE RAM</div><div id="sh-ram" class="kpi-value" style="font-size:14px;">—</div></div>
-        <div><div class="kpi-label">JS HEAP</div><div id="sh-heap" class="kpi-value" style="font-size:14px;">—</div></div>
-        <div><div class="kpi-label">BATTERY</div><div id="sh-battery" class="kpi-value" style="font-size:14px;">—</div></div>
-        <div><div class="kpi-label">NETWORK</div><div id="sh-network" class="kpi-value" style="font-size:14px;">—</div></div>
-      </div>
-      <div style="margin-top:6px;">
-        <div class="kpi-label" style="margin-bottom:3px;">HEAP USAGE</div>
-        <div class="bk-bar"><div id="sh-heap-bar" class="bk-bar-fill" style="width:0%"></div></div>
-      </div>
-      <div style="margin-top:4px;">
-        <div class="kpi-label" style="margin-bottom:3px;">BATTERY</div>
-        <div class="bk-bar"><div id="sh-battery-bar" class="bk-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
-      </div>
-    </div>
-
-    <!-- KPIs -->
-    <div class="panel-label">// KPIs</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div class="kpi-card" style="--delay:1.5s; padding:8px 11px;">
-        <div class="kpi-label">ACTIVE PROJECTS</div>
-        <div id="kpi-projects" class="kpi-value">—</div>
-        <div class="kpi-sub" id="kpi-projects-sub">SCANNING...</div>
-      </div>
-      <div class="kpi-card" style="--delay:2s; padding:8px 11px;">
-        <div class="kpi-label">AI UPTIME</div>
-        <div class="kpi-value">99.9%</div>
-        <div class="kpi-sub">OPTIMAL</div>
-      </div>
-    </div>
   </div>
 
   <!-- ══ BOTTOM BAR ══ -->
@@ -209,24 +152,6 @@
       <div class="bk-value" id="latency">—</div>
       <div class="bk-bar"><div class="bk-bar-fill" id="latency-bar" style="width:0%"></div></div>
       <div class="bk-trend" id="latency-trend">MEASURING</div>
-    </div>
-    <div class="bottom-kpi" data-num="04">
-      <div class="bk-label">GMAIL UNREAD</div>
-      <div class="bk-value" id="bb-email-unread" style="color:var(--amber);text-shadow:0 0 10px var(--amber);">—</div>
-      <div class="bk-bar"><div id="bb-email-bar" class="bk-bar-fill" style="width:0%"></div></div>
-      <div class="bk-trend" id="bb-email-sub">—</div>
-    </div>
-    <div class="bottom-kpi" data-num="05">
-      <div class="bk-label">SYSTEM INTEGRITY</div>
-      <div class="bk-value">NOMINAL</div>
-      <div class="bk-bar"><div class="bk-bar-fill" style="width:98%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
-      <div class="bk-trend">✓ ALL CLEAR</div>
-    </div>
-    <div class="bottom-kpi" data-num="06">
-      <div class="bk-label">VOICE ENGINE</div>
-      <div class="bk-value" id="bb-voice-status">READY</div>
-      <div class="bk-bar"><div class="bk-bar-fill" id="bb-voice-bar" style="width:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
-      <div class="bk-trend" id="bb-voice-mode">BROWSER TTS</div>
     </div>
   </div>
 

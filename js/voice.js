@@ -2,12 +2,9 @@
   const BACKEND = 'http://localhost:5050';
 
   const micBtn       = document.getElementById('mic-btn');
-  const aiCore       = document.getElementById('ai-core');
   const transcriptEl = document.getElementById('voice-transcript');
   const responseEl   = document.getElementById('voice-response');
   const waveformBars = document.querySelectorAll('.wave-bar');
-  const voiceMode    = document.getElementById('bb-voice-mode');
-  const voiceStatus  = document.getElementById('bb-voice-status');
 
   let usingElevenLabs = null;
 
@@ -22,21 +19,15 @@
 
   // ── State management ──
   function setState(state) {
-    aiCore.classList.remove('listening', 'speaking');
+    micBtn.classList.remove('active', 'speaking');
     if (state === 'listening') {
-      aiCore.classList.add('listening');
-      setWave(true, 'var(--red)');
       micBtn.classList.add('active');
-      if (voiceStatus) voiceStatus.textContent = 'LISTENING';
+      setWave(true, 'var(--red)');
     } else if (state === 'speaking') {
-      aiCore.classList.add('speaking');
+      micBtn.classList.add('speaking');
       setWave(true, 'var(--green)');
-      micBtn.classList.remove('active');
-      if (voiceStatus) voiceStatus.textContent = 'SPEAKING';
     } else {
       setWave(false);
-      micBtn.classList.remove('active');
-      if (voiceStatus) voiceStatus.textContent = 'READY';
     }
   }
 
@@ -66,14 +57,12 @@
     utt.onend    = () => { setState('idle'); if (onEnd) onEnd(); };
     utt.onerror  = () => { setState('idle'); if (onEnd) onEnd(); };
     speechSynthesis.speak(utt);
-    if (voiceMode) voiceMode.textContent = 'BROWSER TTS';
   }
 
   // ── ElevenLabs TTS via backend proxy ──
   async function speakElevenLabs(text, onEnd) {
     try {
       setState('speaking');
-      if (voiceMode) voiceMode.textContent = 'ELEVENLABS';
       const res = await fetch(`${BACKEND}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,7 +87,6 @@
       const res  = await fetch(`${BACKEND}/config`, { signal: AbortSignal.timeout(2000) });
       const data = await res.json();
       usingElevenLabs = !!data.elevenlabs_configured;
-      if (voiceMode) voiceMode.textContent = usingElevenLabs ? 'ELEVENLABS' : 'BROWSER TTS';
     } catch {
       usingElevenLabs = false;
     }
@@ -147,7 +135,6 @@
     micBtn.disabled = true;
     micBtn.title    = 'Speech recognition not supported. Use Chrome or Edge.';
     transcriptEl.textContent = 'STT UNAVAILABLE — USE CHROME';
-    if (voiceMode) voiceMode.textContent = 'NO STT';
   } else {
     const recognition          = new SR();
     recognition.continuous     = false;

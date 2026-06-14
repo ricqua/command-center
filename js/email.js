@@ -77,15 +77,6 @@
       });
     }
 
-    if (key === 'gmail') {
-      setEl('bb-email-unread', data.unread ?? '—');
-      setEl('bb-email-sub', `${data.today ?? 0} TODAY · ${data.sent_today ?? 0} SENT`);
-      const bbBar = document.getElementById('bb-email-bar');
-      if (bbBar) {
-        bbBar.style.width = pressureWidth(data.unread || 0) + '%';
-        bbBar.style.background = pressureColor(data.unread || 0);
-      }
-    }
   }
 
   async function fetchEmailMetrics() {
@@ -93,11 +84,9 @@
       const res  = await fetch(`${BACKEND}/metrics`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      renderEmailPanel('gmail',     data.gmail);
       renderEmailPanel('workspace', data.workspace);
-      if (window.logEvent) window.logEvent(`email poll — gmail ${data.gmail?.unread ?? '?'} unread`);
+      if (window.logEvent) window.logEvent(`email poll — workspace ${data.workspace?.unread ?? '?'} unread`);
     } catch {
-      renderEmailPanel('gmail',     null);
       renderEmailPanel('workspace', null);
     }
   }
