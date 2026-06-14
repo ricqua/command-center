@@ -270,6 +270,7 @@ class Handler(BaseHTTPRequestHandler):
             el_key = CONFIG.get('elevenlabs_api_key', '')
             self.send_json({
                 'elevenlabs_configured': bool(el_key and el_key != 'REPLACE_ME'),
+                'anthropic_credit_usd': CONFIG.get('anthropic_credit_usd', 0),
             })
 
         elif self.path == '/health':
