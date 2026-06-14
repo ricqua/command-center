@@ -596,3 +596,90 @@ header::after {
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── CLAUDE API HEATMAP ── */
+.heatmap-wrap {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.heatmap-day-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 0;
+}
+
+.hm-day-label {
+  font-size: 7px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  height: 7px;
+  line-height: 7px;
+  width: 18px;
+  text-align: right;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 7px);
+  grid-template-rows: repeat(7, 7px);
+  gap: 2px;
+  grid-auto-flow: column;
+}
+
+.heatmap-cell {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+}
+
+.hm-0 { background: rgba(0,245,255,0.04); }
+.hm-1 { background: rgba(0,180,200,0.25); }
+.hm-2 { background: rgba(0,220,240,0.55); }
+.hm-3 { background: var(--cyan); box-shadow: 0 0 4px var(--cyan-dim); }
+
+.heatmap-month-labels {
+  display: flex;
+  margin-left: 22px;
+  margin-bottom: 6px;
+  position: relative;
+  height: 10px;
+}
+
+.hm-month-label {
+  font-size: 7px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  position: absolute;
+}
+
+.claude-stats {
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-top: 4px;
+  line-height: 1.6;
+}
+
+.claude-balance-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 3px;
+}
+
+.claude-balance-label {
+  font-size: 7px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.claude-balance-amount {
+  font-size: 11px;
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-dim);
+  white-space: nowrap;
+}
