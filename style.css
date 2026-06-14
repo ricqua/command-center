@@ -330,6 +330,7 @@ header::after {
   position: absolute;
   border-radius: 50%;
   border: 1px solid rgba(0,245,255,0.25);
+  pointer-events: none;
 }
 
 .ai-ring::before { inset: -14px; animation: ring-spin 8s linear infinite; border-top-color: var(--cyan); }
@@ -400,6 +401,9 @@ header::after {
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   box-shadow: 0 0 20px rgba(0,245,255,0.15), inset 0 0 20px rgba(0,245,255,0.05);
   animation: core-pulse 3s ease-in-out infinite;
+  pointer-events: all;
+  position: relative;
+  z-index: 20;
 }
 
 .mic-btn:hover { background: rgba(0,60,90,0.7); border-color: var(--cyan); box-shadow: 0 0 40px rgba(0,245,255,0.3); }
