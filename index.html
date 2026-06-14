@@ -44,6 +44,33 @@
 
   <!-- ══ LEFT PANEL ══ -->
   <div class="panel-left">
+    <div class="panel-label">// CLAUDE API</div>
+    <div class="kpi-card" style="--delay:0s; padding:8px 11px; margin-bottom:6px;">
+      <div class="corner corner-tl"></div><div class="corner corner-br"></div>
+      <div class="heatmap-month-labels" id="claude-month-labels"></div>
+      <div class="heatmap-wrap">
+        <div class="heatmap-day-labels">
+          <div class="hm-day-label">MON</div>
+          <div class="hm-day-label">TUE</div>
+          <div class="hm-day-label">WED</div>
+          <div class="hm-day-label">THU</div>
+          <div class="hm-day-label">FRI</div>
+          <div class="hm-day-label">SAT</div>
+          <div class="hm-day-label">SUN</div>
+        </div>
+        <div class="heatmap-grid" id="claude-heatmap"></div>
+      </div>
+      <div class="claude-balance-row">
+        <div class="claude-balance-label">BALANCE</div>
+        <div class="claude-balance-amount" id="claude-balance-amount">$—</div>
+        <div style="flex:1;">
+          <div class="bk-bar"><div class="bk-bar-fill" id="claude-balance-bar" style="width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
+        </div>
+        <div class="claude-balance-label" id="claude-balance-of">of $—</div>
+      </div>
+      <div class="claude-stats" id="claude-stats">INPUT — · OUTPUT — · EST. $—</div>
+    </div>
+
     <div class="panel-label">// PROJECTS</div>
     <div id="project-list"></div>
 
@@ -210,5 +237,6 @@
 <script src="js/email.js"></script>
 <script src="js/projects.js"></script>
 <script src="js/voice.js"></script>
+<script src="js/anthropic.js"></script>
 </body>
 </html>
