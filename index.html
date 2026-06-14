@@ -36,8 +36,8 @@
       </div>
     </div>
     <div class="status-bar">
-      <div class="dot"></div>
-      <div class="status-text">NIGHTFALL ONLINE</div>
+      <div class="dot" id="status-dot"></div>
+      <div class="status-text" id="status-text">ALL SYSTEMS NOMINAL</div>
     </div>
   </header>
 
@@ -87,6 +87,7 @@
   <!-- ══ CENTER ══ -->
   <div class="center-panel">
     <canvas id="plasma-canvas"></canvas>
+    <canvas id="nodes-canvas"></canvas>
     <div class="center-overlay">
       <div class="ai-ring">
         <div class="orbit orbit-3"></div>
@@ -131,9 +132,6 @@
       <div class="bk-bar"><div id="ws-pressure" class="bk-bar-fill" style="width:0%"></div></div>
       <div id="ws-updated" style="font-size:7px;color:var(--text-muted);letter-spacing:2px;margin-top:4px;">⚠ START BACKEND</div>
     </div>
-    <div class="panel-label">// RECENT · WORKSPACE</div>
-    <div id="ws-recent" class="email-recent"></div>
-
     <!-- Hydration -->
     <div class="panel-label">// HYDRATION</div>
     <div class="kpi-card" style="--delay:0.5s; padding:8px 11px;">
@@ -150,6 +148,34 @@
         <button class="hydration-reset-btn" id="hyd-reset">RESET</button>
       </div>
       <div class="hydration-status" id="hyd-status">—</div>
+    </div>
+    <!-- System Health -->
+    <div class="panel-label">// SYSTEM HEALTH</div>
+    <div class="kpi-card" style="--delay:0.8s; padding:8px 11px;">
+      <div class="corner corner-tl"></div><div class="corner corner-br"></div>
+      <div class="sh-grid">
+        <div>
+          <div class="kpi-label">CPU USAGE</div>
+          <div class="sh-value" id="sh-cpu">—</div>
+          <div class="bk-bar" style="margin-top:4px;"><div class="bk-bar-fill sh-bar" id="sh-cpu-bar" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="kpi-label">RAM USAGE</div>
+          <div class="sh-value" id="sh-ram">—</div>
+          <div class="bk-bar" style="margin-top:4px;"><div class="bk-bar-fill sh-bar" id="sh-ram-bar" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="kpi-label">DISK USAGE</div>
+          <div class="sh-value" id="sh-disk">—</div>
+          <div class="bk-bar" style="margin-top:4px;"><div class="bk-bar-fill sh-bar" id="sh-disk-bar" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="kpi-label">NETWORK</div>
+          <div class="sh-net" id="sh-net-sent">↑ —</div>
+          <div class="sh-net" id="sh-net-recv">↓ —</div>
+        </div>
+      </div>
+      <div id="sh-updated" style="font-size:7px;color:var(--text-muted);letter-spacing:2px;margin-top:6px;">⚠ START BACKEND</div>
     </div>
   </div>
 
@@ -179,10 +205,12 @@
 
 <script src="js/clocks.js"></script>
 <script src="js/plasma.js"></script>
+<script src="js/nodes.js"></script>
 <script src="js/email.js"></script>
 <script src="js/projects.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/anthropic.js"></script>
 <script src="js/hydration.js"></script>
+<script src="js/syshealth.js"></script>
 </body>
 </html>
