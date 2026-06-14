@@ -3,12 +3,9 @@
 :root {
   --cyan: #00f5ff;
   --cyan-dim: #00b8cc;
-  --cyan-dark: #003d47;
   --blue: #0080ff;
-  --blue-glow: #004499;
   --bg: #020b14;
   --bg2: #041220;
-  --bg3: #061828;
   --panel: rgba(0,15,28,0.95);
   --border: rgba(0,245,255,0.18);
   --border-bright: rgba(0,245,255,0.65);
@@ -473,7 +470,6 @@ header::after {
 /* ── BOTTOM BAR ── */
 .bottom-bar {
   grid-column: 1 / -1;
-  background: var(--panel);
   border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: repeat(6, 1fr);
