@@ -3,5 +3,6 @@ backend/credentials.json
 backend/token_gmail.json
 backend/token_workspace.json
 .superpowers/
+.claude/
 __pycache__/
 *.pyc
