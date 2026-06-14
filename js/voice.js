@@ -126,16 +126,17 @@
         body: JSON.stringify({ message }),
         signal: AbortSignal.timeout(15000),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data.error) {
-        speak('I encountered an error. ' + data.error);
+        await speak('I encountered an error. ' + data.error);
         return;
       }
-      speak(data.response);
+      await speak(data.response);
     } catch {
       transcriptEl.classList.add('error');
       transcriptEl.textContent = 'BACKEND OFFLINE';
-      speak('Backend is offline. Please start the Nightfall server.');
+      await speak('Backend is offline. Please start the Nightfall server.');
     }
   }
 
