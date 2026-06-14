@@ -131,6 +131,24 @@
     </div>
     <div class="panel-label">// RECENT · WORKSPACE</div>
     <div id="ws-recent" class="email-recent"></div>
+
+    <!-- Hydration -->
+    <div class="panel-label">// HYDRATION</div>
+    <div class="kpi-card" style="--delay:0.5s; padding:8px 11px;">
+      <div class="corner corner-tl"></div><div class="corner corner-br"></div>
+      <div class="hydration-bar-wrap">
+        <div class="hydration-bar">
+          <div class="hydration-bar-fill" id="hyd-bar-fill" style="width:0%"></div>
+          <div class="hydration-marker" id="hyd-marker" style="left:0%">▲</div>
+        </div>
+      </div>
+      <div class="hydration-count" id="hyd-count">0 / 14</div>
+      <div class="hydration-btns">
+        <button class="hydration-drink-btn" id="hyd-drink">+ DRINK</button>
+        <button class="hydration-reset-btn" id="hyd-reset">RESET</button>
+      </div>
+      <div class="hydration-status" id="hyd-status">—</div>
+    </div>
   </div>
 
   <!-- ══ BOTTOM BAR ══ -->
@@ -163,5 +181,6 @@
 <script src="js/projects.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/anthropic.js"></script>
+<script src="js/hydration.js"></script>
 </body>
 </html>
