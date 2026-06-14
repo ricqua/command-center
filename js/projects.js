@@ -3,6 +3,11 @@
   let projectsData = [];
   let focusIndex   = 0;
 
+  // ── HTML escape helper (XSS prevention) ──
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   // ── Shared log event emitter (used by email.js and voice.js too) ──
   const localLogEntries = [];
   window.logEvent = function(msg) {
@@ -35,8 +40,8 @@
     list.innerHTML = projects.map(p => `
       <div class="session-card ${ageClass(p.age)}" style="margin-bottom:6px;">
         <div class="corner corner-tl"></div><div class="corner corner-br"></div>
-        <div class="session-title">${p.name.toUpperCase()}</div>
-        <div class="session-meta">${fmtDate(p.last_modified)}</div>
+        <div class="session-title">${esc(p.name.toUpperCase())}</div>
+        <div class="session-meta">${esc(fmtDate(p.last_modified))}</div>
         <span class="session-status ${p.age === 'active' ? 'live' : 'idle'}" style="display:inline-block;font-size:8px;padding:1px 6px;margin-top:3px;letter-spacing:2px;${p.age === 'active' ? 'background:rgba(0,255,136,0.1);color:var(--green);border:1px solid var(--green-dim);' : 'background:rgba(0,80,100,0.2);color:var(--text-dim);border:1px solid var(--text-muted);'}">
           ${p.age === 'active' ? '● ACTIVE' : p.age === 'recent' ? '◎ RECENT' : '○ IDLE'}
         </span>
@@ -78,13 +83,14 @@
     const feed = document.getElementById('log-feed');
     if (!feed) return;
     feed.innerHTML = localLogEntries.slice(0, 15).map(e =>
-      `<div class="log-entry"><span class="log-time">${e.time}</span>${e.message}</div>`
+      `<div class="log-entry"><span class="log-time">${esc(e.time)}</span>${esc(e.message)}</div>`
     ).join('');
   }
 
   async function fetchBackendLog() {
     try {
       const res  = await fetch(`${BACKEND}/log`, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       data.forEach(e => {
         const exists = localLogEntries.some(l => l.time === e.time && l.message === e.message);
@@ -100,6 +106,7 @@
   async function fetchProjects() {
     try {
       const res  = await fetch(`${BACKEND}/projects`, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       projectsData = await res.json();
       renderProjects(projectsData);
       renderFocus(projectsData);
