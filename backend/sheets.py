@@ -15,6 +15,7 @@ from googleapiclient.discovery import build
 
 SPREADSHEET_ID = '13XkPAhM8gVb9BCkFEX1vBOHqKbyI_m3AN1TO3t14pSU'
 
+# Both scopes needed because token_gmail.json is shared with the Gmail module in server.py
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/spreadsheets',
@@ -33,7 +34,8 @@ SHEET_HEADERS = {
 _service   = None
 _svc_lock  = threading.Lock()
 _write_q   = queue.Queue()
-_enabled   = True
+_enabled   = threading.Event(); _enabled.set()
+_headers_written: set = set()
 _log_fn    = print  # replaced by server.py after import
 
 
@@ -43,7 +45,7 @@ def set_log(fn):
 
 
 def _get_service():
-    global _service, _enabled
+    global _service
     with _svc_lock:
         if _service:
             return _service
@@ -58,19 +60,21 @@ def _get_service():
                         f.write(creds.to_json())
                 else:
                     _log_fn('sheets — token missing Sheets scope — delete token_gmail.json and restart to re-auth')
-                    _enabled = False
+                    _enabled.clear()
                     return None
             _service = build('sheets', 'v4', credentials=creds)
             _log_fn('sheets — authenticated ok')
             return _service
         except Exception as e:
             _log_fn(f'sheets — auth error — {e}')
-            _enabled = False
+            _enabled.clear()
             return None
 
 
 def _ensure_header(svc, sheet_name):
     """Write header row if sheet is empty."""
+    if sheet_name in _headers_written:
+        return
     try:
         result = svc.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
@@ -83,6 +87,7 @@ def _ensure_header(svc, sheet_name):
                 valueInputOption='RAW',
                 body={'values': [SHEET_HEADERS[sheet_name]]}
             ).execute()
+        _headers_written.add(sheet_name)
     except Exception as e:
         _log_fn(f'sheets — header check failed ({sheet_name}) — {e}')
 
@@ -114,28 +119,29 @@ def _today():
     return datetime.date.today().isoformat()
 
 
-def _time_hhmm():
-    return datetime.datetime.now().strftime('%H:%M')
-
-
 # ── Writer thread ─────────────────────────────────────────────────────────────
 
 def _writer_loop():
     while True:
         item = _write_q.get()
-        if not _enabled:
+        if not _enabled.is_set():
             _write_q.task_done()
             continue
-        sheet_name, row = item
         try:
-            _append(sheet_name, row)
-        except Exception:
-            # retry once after 5s
-            time.sleep(5)
-            try:
-                _append(sheet_name, row)
-            except Exception as e:
-                _log_fn(f'sheets — write dropped ({sheet_name}) — {e}')
+            if callable(item):
+                item()
+            else:
+                sheet_name, row = item
+                try:
+                    _append(sheet_name, row)
+                except Exception:
+                    time.sleep(5)
+                    try:
+                        _append(sheet_name, row)
+                    except Exception as e:
+                        _log_fn(f'sheets — write dropped ({sheet_name}) — {e}')
+        except Exception as e:
+            _log_fn(f'sheets — writer error — {e}')
         _write_q.task_done()
 
 
@@ -145,13 +151,13 @@ threading.Thread(target=_writer_loop, daemon=True).start()
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def log_hydration(count, goal=14):
-    if not _enabled:
+    if not _enabled.is_set():
         return
     _write_q.put(('hydration_log', [_now_iso(), _today(), count, goal]))
 
 
 def log_chat(user_msg, ai_msg, session_id):
-    if not _enabled:
+    if not _enabled.is_set():
         return
     ts = _now_iso()
     date = _today()
@@ -160,7 +166,7 @@ def log_chat(user_msg, ai_msg, session_id):
 
 
 def log_syshealth(data):
-    if not _enabled or not data or data.get('status') != 'ok':
+    if not _enabled.is_set() or not data or data.get('status') != 'ok':
         return
     _write_q.put(('system_health_log', [
         _now_iso(),
@@ -173,10 +179,8 @@ def log_syshealth(data):
     ]))
 
 
-def upsert_daily_summary(total_drinks=None, goal=14):
+def _upsert_daily_summary_impl(total_drinks=None, goal=14):
     """Update today's row in daily_summary. If total_drinks is None, count from hydration_log."""
-    if not _enabled:
-        return
     svc = _get_service()
     if not svc:
         return
@@ -228,3 +232,12 @@ def upsert_daily_summary(total_drinks=None, goal=14):
         _log_fn(f'sheets — daily_summary upserted — {date} {total_drinks}/{goal}')
     except Exception as e:
         _log_fn(f'sheets — daily_summary upsert failed — {e}')
+
+
+def upsert_daily_summary(total_drinks=None, goal=14):
+    """Queue an upsert of today's row in daily_summary onto the writer thread."""
+    if not _enabled.is_set():
+        return
+    def _do():
+        _upsert_daily_summary_impl(total_drinks, goal)
+    _write_q.put(_do)
