@@ -458,11 +458,12 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({'error': err}, 500)
                 else:
                     self.send_json({'response': text})
-                    threading.Thread(
-                        target=_sheets.log_chat,
-                        args=(message, text, SESSION_ID),
-                        daemon=True
-                    ).start()
+                    def _log_chat_safe(m=message, t=text, s=SESSION_ID):
+                        try:
+                            _sheets.log_chat(m, t, s)
+                        except Exception as e:
+                            log(f'sheets log_chat — error — {e}')
+                    threading.Thread(target=_log_chat_safe, daemon=True).start()
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
 
@@ -563,14 +564,16 @@ if __name__ == '__main__':
             time.sleep(300)  # 5 minutes
             with syshealth_lock:
                 data = dict(syshealth_cache)
-            _sheets.log_syshealth(data)
+            if data:
+                _sheets.log_syshealth(data)
 
     def midnight_summary_loop():
         while True:
             now = datetime.datetime.now()
             tomorrow = (now + datetime.timedelta(days=1)).replace(
                 hour=0, minute=0, second=5, microsecond=0)
-            time.sleep((tomorrow - now).total_seconds())
+            seconds = max((tomorrow - now).total_seconds(), 60)
+            time.sleep(seconds)
             _sheets.upsert_daily_summary()
 
     threading.Thread(target=syshealth_sheets_loop, daemon=True).start()
