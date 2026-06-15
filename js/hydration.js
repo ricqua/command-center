@@ -90,11 +90,20 @@
   let resetTimer   = null;
 
   // ── Drink button ──
+  function postHydration(count) {
+    fetch('http://localhost:5050/hydration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count, goal: GOAL }),
+    }).catch(() => {});
+  }
+
   document.getElementById('hyd-drink').addEventListener('click', () => {
     if (count >= GOAL) return;
     count++;
     save(count);
     render(count);
+    postHydration(count);
     if (window.logEvent) window.logEvent(`hydration — ${count}/${GOAL} glasses`);
   });
 
@@ -118,6 +127,7 @@
       count = 0;
       save(0);
       render(0);
+      postHydration(0);
       if (window.logEvent) window.logEvent('hydration — reset');
     }
   });
