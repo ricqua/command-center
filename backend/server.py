@@ -15,7 +15,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/spreadsheets',
+]
 PORT   = 5050
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
@@ -29,6 +32,12 @@ def load_config():
     return {}
 
 CONFIG = load_config()
+
+import sys as _sys
+_sys.path.insert(0, os.path.dirname(__file__))
+import sheets as _sheets
+import secrets
+SESSION_ID = secrets.token_hex(3)
 
 ACCOUNTS = [
     {'key': 'gmail',     'email': 'royalbramble@gmail.com',              'token': 'token_gmail.json'},
@@ -49,6 +58,8 @@ def log(msg):
     with log_lock:
         log_buffer.appendleft(entry)
     print(f"[{entry['time']}] {msg}")
+
+_sheets.set_log(log)
 
 # ── EMAIL CACHE ──────────────────────────────────────────────────────────────
 
@@ -447,8 +458,29 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({'error': err}, 500)
                 else:
                     self.send_json({'response': text})
+                    threading.Thread(
+                        target=_sheets.log_chat,
+                        args=(message, text, SESSION_ID),
+                        daemon=True
+                    ).start()
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
+
+        elif self.path == '/hydration':
+            length = int(self.headers.get('Content-Length', 0))
+            body   = self.rfile.read(length)
+            try:
+                data  = json.loads(body)
+                count = int(data.get('count', 0))
+                goal  = int(data.get('goal', 14))
+                threading.Thread(
+                    target=_sheets.log_hydration,
+                    args=(count, goal),
+                    daemon=True
+                ).start()
+                self.send_json({'ok': True})
+            except Exception as e:
+                self.send_json({'error': str(e)}, 400)
 
         elif self.path == '/tts':
             length = int(self.headers.get('Content-Length', 0))
@@ -525,6 +557,24 @@ if __name__ == '__main__':
 
     threading.Thread(target=usage_loop, daemon=True).start()
     threading.Thread(target=syshealth_loop, daemon=True).start()
+
+    def syshealth_sheets_loop():
+        while True:
+            time.sleep(300)  # 5 minutes
+            with syshealth_lock:
+                data = dict(syshealth_cache)
+            _sheets.log_syshealth(data)
+
+    def midnight_summary_loop():
+        while True:
+            now = datetime.datetime.now()
+            tomorrow = (now + datetime.timedelta(days=1)).replace(
+                hour=0, minute=0, second=5, microsecond=0)
+            time.sleep((tomorrow - now).total_seconds())
+            _sheets.upsert_daily_summary()
+
+    threading.Thread(target=syshealth_sheets_loop, daemon=True).start()
+    threading.Thread(target=midnight_summary_loop,  daemon=True).start()
 
     log(f"Serving on http://localhost:{PORT}")
     server = HTTPServer(('localhost', PORT), Handler)
